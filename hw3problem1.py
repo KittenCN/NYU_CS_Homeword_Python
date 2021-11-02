@@ -153,7 +153,12 @@ class Blackjack():
         elif len(winners) == 1:
             print("Winner is " + winners[0])
         else:
-            print("There is a tie, winners are " + winners)
+            res = ""
+            for i in range(len(winners)):
+                res += winners[i]
+                if i != len(winners) - 1:
+                    res += ", "
+            print("There is a tie, winners are " + res)
 
     # DON'T CHANGE OR REMOVE THIS
     # This function creates a string representing the state of a Blackjack game
