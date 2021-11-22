@@ -170,7 +170,23 @@ def stress_test():
 # must contain two strings of 5 words each. Each string
 # corresponds to a line. The two lines you return must rhyme.
 def generate_rhyming_lines():
-    return -1
+    oriStrList = random_word_generator(None, 2)
+    while len(oriStrList) != 2:
+        oriStrList = random_word_generator(None, 2)
+    ansList = [""] * 2
+    intLine = 0
+    for i in range(len(oriStrList)):
+        intIndex = 0
+        rhymeList = get_rhymes(oriStrList[i])
+        for i in range(len(rhymeList)):
+            if intIndex < 5:
+                # print(str(intLine), str(intIndex), rhymeList[i])
+                ansList[intLine] += rhymeList[i] + " "
+                intIndex += 1
+            else:
+                intLine += 1
+                break
+    return ansList
 
 # generate_10_syllable_lines()
 # Complete this function so that it returns a list. The list
@@ -178,7 +194,21 @@ def generate_rhyming_lines():
 # corresponds to a line and each line must be composed of words
 # whose number of syllables add up to 10 syllables total.
 def generate_10_syllable_lines():
-    return -1
+    ansList = [""] * 2
+    intLine = 0
+    for i in range(2):
+        sumsyllables = 0
+        while sumsyllables < 10:
+            oriStrList = random_word_generator(None, 5)
+            while len(oriStrList) != 5:
+                oriStrList = random_word_generator(None, 5)
+            for j in range(len(oriStrList)):
+                sumsyllables += count_syllables(oriStrList[j])
+            if sumsyllables >= 10:
+                for j in range(len(oriStrList)):
+                    ansList[intLine] += oriStrList[j] + " "
+                intLine += 1
+    return ansList
 
 
 # generate_metered_line()
@@ -187,7 +217,16 @@ def generate_10_syllable_lines():
 # syllables, and the rhythm of the line must match the following
 # pattern of stresses: 0101010101
 def generate_metered_line():
-    return -1
+    num = 0
+    ansList = ""
+    while num < 10:
+        oriStr = random_word_generator(None, 1)
+        stressesList = get_stresses(oriStr[0])
+        if len(stressesList) > 0:
+            if stressesList[0] == "01":
+                ansList += oriStr[0] + " "
+                num += 1
+    return ansList
 
 # generate_line()
 # Use this function to generate each line of your poem.
@@ -199,8 +238,34 @@ def generate_metered_line():
 #     -last word choice constrained by rhyming pattern
 # Add any parameters to this function you need to bring in
 # information about how a particular line should be constructed.
-def generate_line():
-    return -1
+def generate_line(rhyme=None, intLength=1, stdstress=None):
+    ansList = ""
+    index = 1
+    while intLength > 0:
+        stressesList = []
+        oriStrList = []
+        while len(stressesList) <= 0:
+            if intLength == 1 and rhyme is not None:
+                oriStrList = rhyme
+                if index >= len(oriStrList):
+                    tmp = random.randint(0, len(rhyme) - 1)
+                    ansList += rhyme[tmp] + " "
+                    intLength -= 1
+                    break
+                oriStr = [oriStrList[index]]
+                index += 1
+            else:
+                oriStr = random_word_generator(None, 1)
+                if intLength == 1:
+                    while len(get_rhymes(oriStr[0])) == 0:
+                        oriStr = random_word_generator(None, 1)
+            stressesList = get_stresses(oriStr[0])
+        for i in range(len(stressesList)):
+            if stressesList[i] in stdstress or stdstress is None:
+                ansList += oriStr[0] + " "
+                intLength -= 1
+                break
+    return ansList
 
 # generate_poem()
 # Use this function to construct your poem, line by line.
@@ -210,26 +275,39 @@ def generate_line():
 #     -The total number of lines
 #     -How the lines relate to each other (rhyming, syllable counts, etc)
 def generate_poem():
-    return -1
+    intNum = 4
+    intLengthList = [8, 6]
+    stdstress = [["0", "00"], ["1", "01", "11"]]
+    ans = ""
+    strRhyme = ""
+    flag = False
+    for i in range(intNum):
+        for j in range(2):
+            if i == 0 and flag is False:
+                ans += generate_line(None, intLengthList[j], stdstress[j])
+                strRhyme = get_rhymes(ans.split()[-1])
+                flag = True
+            else:
+                ans += generate_line(strRhyme, intLengthList[j], stdstress[j])
+            ans += '\r\n'
+    return ans
 
 
 if __name__ == "__main__":
-    #test()
-    stress_test()
-    print()
-    '''
-    result1 = generate_rhyming_lines()
-    print(result1)
-    print()
+    # test()
+    # stress_test()
+    # print()
 
-    result2 = generate_10_syllable_lines()
-    print(result2)
-    print()
+    # result1 = generate_rhyming_lines()
+    # print(result1)
+    # print()
 
-    result3 = generate_metered_line()
-    print(result3)
-    print()
-    
+    # result2 = generate_10_syllable_lines()
+    # print(result2)
+    # print()
+
+    # result3 = generate_metered_line()
+    # print(result3)
+    # print()    
     my_poem = generate_poem()
     print(my_poem)
-    '''
