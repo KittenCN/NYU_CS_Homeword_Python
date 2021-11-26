@@ -178,24 +178,25 @@ def crawler():
     _db.close()
     parse_one_page(get_page())
 
-def replaceCount(index):
+def replaceCount(begin=0, index=0):
     _db = sh.Connect("pl3.db")
     _data = _db.table('pl3').findAll()
     _pridata = [0] * 1000
     sumcount = 0
-    for i in range(index):
+    for i in range(begin, index):
         _pridata[int(_data[i]['SortData'])] += 1
-    for i in range(index):
+    for i in range(begin, index):
         if _pridata[i] > 1:
             sumcount += _pridata[i]
     _db.close()
-    return round(sumcount / index, 4) * 100
+    # str(Decimal((scnt[i] / (cnt * 3)) * 100).quantize(Decimal("0.00")))
+    return str(Decimal((sumcount / (index - begin)) * 100).quantize(Decimal("0.00")))
 
-def CalBSaOE(index, strChose="BS"):
+def CalBSaOE(begin=0, index=0, strChose="BS"):
     _db = sh.Connect("pl3.db")
     _data = _db.table('pl3').findAll()
     ans = [0] * 4
-    for i in range(index):
+    for i in range(begin, index):
         tmp = _data[i][strChose].split(':')
         # print(tmp)
         if tmp[0] == '0':
@@ -207,7 +208,7 @@ def CalBSaOE(index, strChose="BS"):
         else:   
             ans[3] += 1
     # Decimal(ans[0] / index * 100).quantize(Decimal("0.00"))
-    strans = ("0:3 占比 " + str(Decimal(ans[0] / index * 100).quantize(Decimal("0.00"))) + "%" + ", 1:2 占比 " + str(Decimal(ans[1] / index * 100).quantize(Decimal("0.00"))) + "%" + ", 2:1 占比 " + str(Decimal(ans[2] / index * 100).quantize(Decimal("0.00"))) + "%" + ", 3:0 占比 " + str(Decimal(ans[3] / index * 100).quantize(Decimal("0.00"))) + "%")
+    strans = ("0:3 占比 " + str(Decimal(ans[0] / (index - begin) * 100).quantize(Decimal("0.00"))) + "%" + ", 1:2 占比 " + str(Decimal(ans[1] / (index - begin) * 100).quantize(Decimal("0.00"))) + "%" + ", 2:1 占比 " + str(Decimal(ans[2] / (index - begin) * 100).quantize(Decimal("0.00"))) + "%" + ", 3:0 占比 " + str(Decimal(ans[3] / (index - begin) * 100).quantize(Decimal("0.00"))) + "%")
     _db.close()
     return strans
 
@@ -233,33 +234,33 @@ def BtoD(num):
         ans = "0" + ans
     return ans
 
-def CalBSSaOES(index, strChose="BSS"):
+def CalBSSaOES(begin, index, strChose="BSS"):
     _db = sh.Connect("pl3.db")
     _data = _db.table("pl3").findAll()
     ans = [0] * 8
     strans = ""
-    for i in range(index):
+    for i in range(begin, index):
         ans[DtoB(int(_data[i][strChose]))] += 1
     for i in range(8):
         # if i == 4:
         #     strans += '\r\n'
-        strans += BtoD(i) + "占比: " + str(Decimal(ans[i] / index * 100).quantize(Decimal("0.00"))) + "%"
+        strans += BtoD(i) + "占比: " + str(Decimal(ans[i] / (index - begin) * 100).quantize(Decimal("0.00"))) + "%"
         if i != 7:
             strans += ", "
     return strans
 
-def CalTS(index):
+def CalTS(begin=0, index=0):
     _db = sh.Connect("pl3.db")
     _data = _db.table('pl3').findAll()
     ans = [0] * 3
-    for i in range(index):
+    for i in range(begin, index):
         if _data[i]['TS'] == 0:
             ans[0] += 1
         elif _data[i]['TS'] == 3:
             ans[1] += 1
         else:
             ans[2] += 1
-    strans = ("豹子占比 " + str(Decimal(ans[0] / index * 100).quantize(Decimal("0.00"))) + "%" + ", 组合3占比 " + str(Decimal(ans[1] / index * 100).quantize(Decimal("0.00"))) + "%" + ", 组合6占比 " + str(Decimal(ans[2] / index * 100).quantize(Decimal("0.00"))) + "%")
+    strans = ("豹子占比 " + str(Decimal(ans[0] / (index - begin) * 100).quantize(Decimal("0.00"))) + "%" + ", 组合3占比 " + str(Decimal(ans[1] / (index - begin) * 100).quantize(Decimal("0.00"))) + "%" + ", 组合6占比 " + str(Decimal(ans[2] / (index - begin) * 100).quantize(Decimal("0.00"))) + "%")
     _db.close()
     return strans
 
@@ -277,14 +278,14 @@ def smartCount():
 def CalCurrent(n):
     _db = sh.Connect("pl3.db")
     _data = _db.table('pl3').findAll()
-    currentdata = _data[n - 1]
+    currentdata = _data[n]
     sortcnt = 0
     bsp = [0] * 4
     oep = [0] * 4
     tsp = [0] * 3
     bssans = [0] * 8
     oesans = [0] * 8
-    for i in range(len(_data) - 1, n - 1, -1):
+    for i in range(len(_data) - 1, n, -1):
         if int(_data[i]['SortData']) == int(currentdata['SortData']):
             sortcnt += 1
             bsp[int(_data[i + 1]['BS'].split(':')[0])] += 1
@@ -297,7 +298,7 @@ def CalCurrent(n):
                 tsp[1] += 1
             else:
                 tsp[2] += 1
-    print("第" + str(n) + "期数值： " + currentdata["OriData"])
+    print("第" + str(n + 1) + "期数值： " + currentdata["OriData"])
     print("往期共出现" + str(sortcnt) + "次，相邻期分析如下:")
     print("大小比： " + "0:3 占比 " + str(Decimal(bsp[0] / sortcnt * 100).quantize(Decimal("0.00"))) + "%" + ", 1:2 占比 " + str(Decimal(bsp[1] / sortcnt * 100).quantize(Decimal("0.00"))) + "%" + ", 2:1 占比 " + str(Decimal(bsp[2] / sortcnt * 100).quantize(Decimal("0.00"))) + "%" + ", 3:0 占比 " + str(Decimal(bsp[3] / sortcnt * 100).quantize(Decimal("0.00"))) + "%")
     print("奇偶比： " + "0:3 占比 " + str(Decimal(oep[0] / sortcnt * 100).quantize(Decimal("0.00"))) + "%" + ", 1:2 占比 " + str(Decimal(oep[1] / sortcnt * 100).quantize(Decimal("0.00"))) + "%" + ", 2:1 占比 " + str(Decimal(oep[2] / sortcnt * 100).quantize(Decimal("0.00"))) + "%" + ", 3:0 占比 " + str(Decimal(oep[3] / sortcnt * 100).quantize(Decimal("0.00"))) + "%")
@@ -316,12 +317,14 @@ def CalCurrent(n):
     print(strans)    
     _db.close()
 
-def Guess(index=100, replace=0, bsp=[1,2], oep=[1,2], tsp=[2], sorted=0, st=[], nd=[], rd=[], bss=[], oes=[]):
+def Guess(begin=0, index=-1, replace=10, bsp=[0,1,2], oep=[1,2], tsp=[2], sorted=0, st=[], nd=[], rd=[], bss=[], oes=[]):
     _data = [1] * 1000
     if replace > 0:
         _db = sh.Connect("pl3.db")
         _used = _db.table('pl3').findAll()
-        for i in range(index):
+        if index == -1:
+            index = len(_used)
+        for i in range(begin, index):
             if _data[int(_used[i]["OriData"])] == 1:
                 tmpran = random.randint(0, 100)
                 if tmpran <= replace:
@@ -411,71 +414,83 @@ def Guess(index=100, replace=0, bsp=[1,2], oep=[1,2], tsp=[2], sorted=0, st=[], 
             if scnt[i] > 0:
                 print(str(i) + " " + str(scnt[i]) + " " + str(Decimal((scnt[i] / (cnt * 3)) * 100).quantize(Decimal("0.00"))) + "%")
 
+def ProcessData(begin=0):
+    print("-------------------------------------------")
+    print("近100期重复率:" + str(replaceCount(begin, begin + 100)) + "%")
+    print("近50期重复率:" + str(replaceCount(begin, begin + 50)) + "%")
+    print("近30期重复率:" + str(replaceCount(begin, begin + 30)) + "%")
+    print("近10期重复率:" + str(replaceCount(begin, begin + 10)) + "%")
+    print("")
+    # print("总智能重复率:" + str(smartCount()) + "%")
+    # print("")
+    # 大：小
+    print("近100期大小比：" + str(CalBSaOE(begin, begin + 100, "BS")))
+    print("近50期大小比：" + str(CalBSaOE(begin, begin + 50, "BS")))
+    print("近30期大小比：" + str(CalBSaOE(begin, begin + 30, "BS")))
+    print("近10期大小比：" + str(CalBSaOE(begin, begin + 10, "BS")))
+    print("")
+    print("近100期奇偶比：" + str(CalBSaOE(begin, begin + 100, "OE")))
+    print("近50期奇偶比：" + str(CalBSaOE(begin, begin + 50, "OE")))
+    print("近30期奇偶比：" + str(CalBSaOE(begin, begin + 30, "OE")))
+    print("近10期奇偶比：" + str(CalBSaOE(begin, begin + 10, "OE")))
+    print("")
+    print("近100期36比：" + str(CalTS(begin, begin + 100)))
+    print("近50期36比：" + str(CalTS(begin, begin + 50)))
+    print("近30期36比：" + str(CalTS(begin, begin + 30)))
+    print("近10期36比：" + str(CalTS(begin, begin + 10)))
+    print("")
+    # 0小 1大
+    print("近100期按位大小比: " + str(CalBSSaOES(begin, begin + 100, "BSS")))
+    print("近50期按位大小比: " + str(CalBSSaOES(begin, begin + 50, "BSS")))
+    print("近30期按位大小比: " + str(CalBSSaOES(begin, begin + 30, "BSS")))
+    print("近10期按位大小比: " + str(CalBSSaOES(begin, begin + 10, "BSS")))
+    print("")
+    print("近100期按位奇偶比: " + str(CalBSSaOES(begin, begin + 100, "OES")))
+    print("近50期按位奇偶比: " + str(CalBSSaOES(begin, begin + 50, "OES")))
+    print("近30期按位奇偶比: " + str(CalBSSaOES(begin, begin + 30, "OES")))
+    print("近10期按位奇偶比: " + str(CalBSSaOES(begin, begin + 10, "OES")))
+    print("")
+    CalCurrent(begin)
+    print("")
+    # CalCurrent(2)
+    # print("")
+    # CalCurrent(3)
+    print("")
+
+def ForecastData(begin=0):
+    print("-------------------------------------------")
+    print("输入预测参数")
+    # list(map(int, results))
+    repeace = input("重复率：")
+    bigsmall = list(map(int, input("大小比：").split(",")))
+    oddeven = list(map(int, input("奇偶比：").split(",")))
+    ts = list(map(int, input("36比：").split(",")))
+    st = list(map(int, input("杀百位：").split(",")))
+    nd = list(map(int, input("杀十位：").split(",")))
+    rd = list(map(int, input("杀个位：").split(",")))
+    bss = list(map(str, input("杀大小比: ").split(",")))
+    oes = list(map(str, input("杀奇偶比: ").split(",")))
+    print("预测直选结果：")
+    Guess(begin, begin + 100, int(repeace), bigsmall, oddeven, ts, 0, st, nd, rd, bss, oes)
+    print("预测组选结果：")
+    Guess(begin, begin + 100, int(repeace), bigsmall, oddeven, ts, 0, st, nd, rd, bss, oes)
+
 if __name__ == "__main__":
     while True:
         print("")
-        select = input("请选择操作:\n1.爬取数据\n2.处理数据\n3.预测数据\n4.退出\n")
+        select = input("请选择操作:\n1.爬取数据\n2.处理数据\n3.预测数据\n4.处理历史数据\n5.预测历史数据\n9.退出\n")
         if select == "1":
             crawler()
             print("-------------------------------------------")
         elif select == "2":
-            print("-------------------------------------------")
-            print("近100期重复率:" + str(replaceCount(100)) + "%")
-            print("近50期重复率:" + str(replaceCount(50)) + "%")
-            print("近30期重复率:" + str(replaceCount(30)) + "%")
-            print("近10期重复率:" + str(replaceCount(10)) + "%")
-            print("")
-            # print("总智能重复率:" + str(smartCount()) + "%")
-            # print("")
-            # 大：小
-            print("近100期大小比：" + str(CalBSaOE(100, "BS")))
-            print("近50期大小比：" + str(CalBSaOE(50, "BS")))
-            print("近30期大小比：" + str(CalBSaOE(30, "BS")))
-            print("近10期大小比：" + str(CalBSaOE(10, "BS")))
-            print("")
-            print("近100期奇偶比：" + str(CalBSaOE(100, "OE")))
-            print("近50期奇偶比：" + str(CalBSaOE(50, "OE")))
-            print("近30期奇偶比：" + str(CalBSaOE(30, "OE")))
-            print("近10期奇偶比：" + str(CalBSaOE(10, "OE")))
-            print("")
-            print("近100期36比：" + str(CalTS(100)))
-            print("近50期36比：" + str(CalTS(50)))
-            print("近30期36比：" + str(CalTS(30)))
-            print("近10期36比：" + str(CalTS(10)))
-            print("")
-            # 0小 1大
-            print("近100期按位大小比: " + str(CalBSSaOES(100, "BSS")))
-            print("近50期按位大小比: " + str(CalBSSaOES(50, "BSS")))
-            print("近30期按位大小比: " + str(CalBSSaOES(30, "BSS")))
-            print("近10期按位大小比: " + str(CalBSSaOES(10, "BSS")))
-            print("")
-            print("近100期按位奇偶比: " + str(CalBSSaOES(100, "OES")))
-            print("近50期按位奇偶比: " + str(CalBSSaOES(50, "OES")))
-            print("近30期按位奇偶比: " + str(CalBSSaOES(30, "OES")))
-            print("近10期按位奇偶比: " + str(CalBSSaOES(10, "OES")))
-            print("")
-            CalCurrent(1)
-            print("")
-            # CalCurrent(2)
-            # print("")
-            # CalCurrent(3)
-            print("")
+            ProcessData(0)
         elif select == "3":
-            print("-------------------------------------------")
-            print("输入预测参数")
-            # list(map(int, results))
-            repeace = input("重复率：")
-            bigsmall = list(map(int, input("大小比：").split(",")))
-            oddeven = list(map(int, input("奇偶比：").split(",")))
-            ts = list(map(int, input("36比：").split(",")))
-            st = list(map(int, input("杀百位：").split(",")))
-            nd = list(map(int, input("杀十位：").split(",")))
-            rd = list(map(int, input("杀个位：").split(",")))
-            bss = list(map(str, input("杀大小比: ").split(",")))
-            oes = list(map(str, input("杀奇偶比: ").split(",")))
-            print("预测直选结果：")
-            Guess(100, int(repeace), bigsmall, oddeven, ts, 0, bss, oes)
-            print("预测组选结果：")
-            Guess(100, int(repeace), bigsmall, oddeven, ts, 1, bss, oes)
+            ForecastData(0)
         elif select == "4":
+            num = int(input("输入预测期数："))
+            ProcessData(num)
+        elif select == "5":
+            num = int(input("输入预测期数："))
+            ForecastData(num)
+        elif select == "9":
             break
