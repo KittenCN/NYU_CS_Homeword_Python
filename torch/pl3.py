@@ -5,9 +5,7 @@ from bs4 import BeautifulSoup as bs
 import SqliteHelper as sh
 from decimal import Decimal
 import random
-
-dfsans = []
-tans = [0, 0, 0]
+import math
 
 def write_to_file(item):
     file_name = "PLS.csv"
@@ -81,10 +79,46 @@ def parse_one_page(get_html):
             pls["OE"] = getOE(strData)
             pls["BS"] = getBS(strData)
             pls["TS"] = getTS(strData)
+            pls["BSS"] = getBSS(strData)
+            pls["OES"] = getOES(strData)
             plsData.append(pls)
     _db.table('pl3').data(plsData).add()
     _db.close()
     print("写入完成")
+
+def getOES(_data):
+    listData = list(_data)
+    intans = 0
+    strans = ""
+    if int(listData[0]) % 2 == 1:
+        intans += 100
+    if int(listData[1]) % 2 == 1:
+        intans += 10
+    if int(listData[2]) % 2 == 1:
+        intans += 1
+    strans = str(intans)
+    if len(strans) == 1:
+        strans = "00" + strans
+    elif len(strans) == 2:
+        strans = "0" + strans
+    return str(strans)   
+
+def getBSS(_data):
+    listData = list(_data)
+    intans = 0
+    strans = ""
+    if int(listData[0]) > 4:
+        intans += 100
+    if int(listData[1]) > 4:
+        intans += 10
+    if int(listData[2]) > 4:
+        intans += 1
+    strans = str(intans)
+    if len(strans) == 1:
+        strans = "00" + strans
+    elif len(strans) == 2:
+        strans = "0" + strans
+    return str(strans)  
 
 def getTS(_data):
     listData = list(_data)
@@ -177,6 +211,43 @@ def CalBSaOE(index, strChose="BS"):
     _db.close()
     return strans
 
+def DtoB(num):
+    i = 0
+    ans = 0
+    while num > 0:
+        ans += (num % 10) * int(math.pow(2, i))
+        i += 1
+        num //= 10
+    return ans
+
+def BtoD(num):
+    ans = ""
+    while num > 0:
+        ans = str(num % 2) + ans
+        num //= 2
+    if len(ans) == 0:
+        ans = "000"
+    elif len(ans) == 1:
+        ans = "00" + ans
+    elif len(ans) == 2:
+        ans = "0" + ans
+    return ans
+
+def CalBSSaOES(index, strChose="BSS"):
+    _db = sh.Connect("pl3.db")
+    _data = _db.table("pl3").findAll()
+    ans = [0] * 8
+    strans = ""
+    for i in range(index):
+        ans[DtoB(int(_data[i][strChose]))] += 1
+    for i in range(8):
+        # if i == 4:
+        #     strans += '\r\n'
+        strans += BtoD(i) + "占比: " + str(Decimal(ans[i] / index * 100).quantize(Decimal("0.00"))) + "%"
+        if i != 7:
+            strans += ", "
+    return strans
+
 def CalTS(index):
     _db = sh.Connect("pl3.db")
     _data = _db.table('pl3').findAll()
@@ -211,11 +282,15 @@ def CalCurrent(n):
     bsp = [0] * 4
     oep = [0] * 4
     tsp = [0] * 3
+    bssans = [0] * 8
+    oesans = [0] * 8
     for i in range(len(_data) - 1, n - 1, -1):
         if int(_data[i]['SortData']) == int(currentdata['SortData']):
             sortcnt += 1
             bsp[int(_data[i + 1]['BS'].split(':')[0])] += 1
             oep[int(_data[i + 1]['OE'].split(':')[0])] += 1
+            bssans[DtoB(int(_data[i + 1]["BSS"]))] += 1
+            oesans[DtoB(int(_data[i + 1]["OES"]))] += 1
             if _data[i + 1]['TS'] == 0:
                 tsp[0] += 1
             elif _data[i + 1]['TS'] == 3:
@@ -227,9 +302,21 @@ def CalCurrent(n):
     print("大小比： " + "0:3 占比 " + str(Decimal(bsp[0] / sortcnt * 100).quantize(Decimal("0.00"))) + "%" + ", 1:2 占比 " + str(Decimal(bsp[1] / sortcnt * 100).quantize(Decimal("0.00"))) + "%" + ", 2:1 占比 " + str(Decimal(bsp[2] / sortcnt * 100).quantize(Decimal("0.00"))) + "%" + ", 3:0 占比 " + str(Decimal(bsp[3] / sortcnt * 100).quantize(Decimal("0.00"))) + "%")
     print("奇偶比： " + "0:3 占比 " + str(Decimal(oep[0] / sortcnt * 100).quantize(Decimal("0.00"))) + "%" + ", 1:2 占比 " + str(Decimal(oep[1] / sortcnt * 100).quantize(Decimal("0.00"))) + "%" + ", 2:1 占比 " + str(Decimal(oep[2] / sortcnt * 100).quantize(Decimal("0.00"))) + "%" + ", 3:0 占比 " + str(Decimal(oep[3] / sortcnt * 100).quantize(Decimal("0.00"))) + "%")
     print("36比:" + "豹子占比 " + str(Decimal(tsp[0] / sortcnt * 100).quantize(Decimal("0.00"))) + "%" + ", 组合3占比 " + str(Decimal(tsp[1] / sortcnt * 100).quantize(Decimal("0.00"))) + "%" + ", 组合6占比 " + str(Decimal(tsp[2] / sortcnt * 100).quantize(Decimal("0.00"))) + "%")
+    strans = "按位大小比: "
+    for i in range(8):
+        strans += BtoD(i) + "占比: " + str(Decimal(bssans[i] / sortcnt * 100).quantize(Decimal("0.00"))) + "%"
+        if i != 7:
+            strans += ", "   
+    print(strans)
+    strans = "按位奇偶比: "
+    for i in range(8):
+        strans += BtoD(i) + "占比: " + str(Decimal(oesans[i] / sortcnt * 100).quantize(Decimal("0.00"))) + "%"
+        if i != 7:
+            strans += ", "   
+    print(strans)    
     _db.close()
 
-def Guess(index=100, replace=0, bsp=[1,2], oep=[1,2], tsp=[2], sorted=0, st=[], nd=[], rd=[]):
+def Guess(index=100, replace=0, bsp=[1,2], oep=[1,2], tsp=[2], sorted=0, st=[], nd=[], rd=[], bss=[], oes=[]):
     _data = [1] * 1000
     if replace > 0:
         _db = sh.Connect("pl3.db")
@@ -253,6 +340,35 @@ def Guess(index=100, replace=0, bsp=[1,2], oep=[1,2], tsp=[2], sorted=0, st=[], 
             first = num // 100
             second = num // 10 % 10
             third = num % 10
+            bsscnt = ""
+            oescnt = ""
+            if first > 4:
+                bsscnt += "1"
+            else:
+                bsscnt += "0"
+            if second > 4:
+                bsscnt += "1"
+            else:
+                bsscnt += "0"
+            if third > 4:
+                bsscnt += "1"
+            else:
+                bsscnt += "0"
+            if first % 2 == 1:
+                oescnt += "1"
+            else:
+                oescnt += "0"
+            if second % 2 == 1:
+                oescnt += "1"
+            else:
+                oescnt += "0"
+            if third % 2 == 1:
+                oescnt += "1"
+            else:
+                oescnt += "0"
+            if first in st or second in nd or third in rd or bsscnt in bss or oescnt in oes:
+                _data[i] = 0
+                continue
             while num > 0:
                 tmp = num % 10
                 tscnt[tmp] += 1
@@ -311,6 +427,7 @@ if __name__ == "__main__":
             print("")
             # print("总智能重复率:" + str(smartCount()) + "%")
             # print("")
+            # 大：小
             print("近100期大小比：" + str(CalBSaOE(100, "BS")))
             print("近50期大小比：" + str(CalBSaOE(50, "BS")))
             print("近30期大小比：" + str(CalBSaOE(30, "BS")))
@@ -325,6 +442,17 @@ if __name__ == "__main__":
             print("近50期36比：" + str(CalTS(50)))
             print("近30期36比：" + str(CalTS(30)))
             print("近10期36比：" + str(CalTS(10)))
+            print("")
+            # 0小 1大
+            print("近100期按位大小比: " + str(CalBSSaOES(100, "BSS")))
+            print("近50期按位大小比: " + str(CalBSSaOES(50, "BSS")))
+            print("近30期按位大小比: " + str(CalBSSaOES(30, "BSS")))
+            print("近10期按位大小比: " + str(CalBSSaOES(10, "BSS")))
+            print("")
+            print("近100期按位奇偶比: " + str(CalBSSaOES(100, "OES")))
+            print("近50期按位奇偶比: " + str(CalBSSaOES(50, "OES")))
+            print("近30期按位奇偶比: " + str(CalBSSaOES(30, "OES")))
+            print("近10期按位奇偶比: " + str(CalBSSaOES(10, "OES")))
             print("")
             CalCurrent(1)
             print("")
@@ -343,9 +471,11 @@ if __name__ == "__main__":
             st = list(map(int, input("杀百位：").split(",")))
             nd = list(map(int, input("杀十位：").split(",")))
             rd = list(map(int, input("杀个位：").split(",")))
+            bss = list(map(str, input("杀大小比: ").split(",")))
+            oes = list(map(str, input("杀奇偶比: ").split(",")))
             print("预测直选结果：")
-            Guess(100, int(repeace), bigsmall, oddeven, ts, 0)
+            Guess(100, int(repeace), bigsmall, oddeven, ts, 0, bss, oes)
             print("预测组选结果：")
-            Guess(100, int(repeace), bigsmall, oddeven, ts, 1)
+            Guess(100, int(repeace), bigsmall, oddeven, ts, 1, bss, oes)
         elif select == "4":
             break
