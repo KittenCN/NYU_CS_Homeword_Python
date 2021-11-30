@@ -48,12 +48,12 @@ def intCalculateMedianScore(scores):
 if __name__ == '__main__':
     fileAddress = ""
     fileName = input("Enter a class file to grade (i.e. class1 for class1.txt): ")
-    while os.path.exists(fileAddress + fileName  + ".txt") is not True:
+    while os.path.exists(fileAddress + fileName + ".txt") is not True:
         print("File cannot be found.")
         fileName = input("Enter a class file to grade (i.e. class1 for class1.txt): ")
-    print("Successfully opened " + fileName  + ".txt")
+    print("Successfully opened " + fileName + ".txt")
     print("")
-    content = listReadFiles(fileAddress + fileName  + ".txt")
+    content = listReadFiles(fileAddress + fileName + ".txt")
     scores = []
     invalidnum = 0
     totlascore = 0
