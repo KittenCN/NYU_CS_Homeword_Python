@@ -1,0 +1,4 @@
+For age:Adult,adult,juvenile
+lines with the queryanywhere: 2568
+total occurrences of the query in the file: 3
+total number of lines with the query in the requested column: 2568
